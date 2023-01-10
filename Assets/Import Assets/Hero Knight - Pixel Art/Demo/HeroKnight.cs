@@ -3,11 +3,12 @@ using System.Collections;
 
 public class HeroKnight : MonoBehaviour {
 
-    [SerializeField] float      m_speed = 4.0f;
-    [SerializeField] float      m_jumpForce = 7.5f;
-    [SerializeField] float      m_rollForce = 6.0f;
+    [SerializeField] float      m_speed = 6.0f;
+    [SerializeField] float      m_jumpForce = 20.0f;
+    [SerializeField] float      m_rollForce = 10.0f;
     [SerializeField] bool       m_noBlood = false;
     [SerializeField] GameObject m_slideDust;
+    public int health = 3;
 
     private Animator            m_animator;
     private Rigidbody2D         m_body2d;
@@ -25,6 +26,11 @@ public class HeroKnight : MonoBehaviour {
     private float               m_delayToIdle = 0.0f;
     private float               m_rollDuration = 8.0f / 14.0f;
     private float               m_rollCurrentTime;
+
+    public Transform attackPos;
+    public LayerMask enemy;
+    public float attackRange = 0.77f;
+    public int damage = 1;
 
 
     // Use this for initialization
@@ -96,6 +102,10 @@ public class HeroKnight : MonoBehaviour {
         m_animator.SetBool("WallSlide", m_isWallSliding);
 
         //Death
+        if (health <= 0){
+            m_animator.SetBool("noBlood", m_noBlood);
+            m_animator.SetTrigger("Death");
+        }
         if (Input.GetKeyDown("e") && !m_rolling)
         {
             m_animator.SetBool("noBlood", m_noBlood);
@@ -119,8 +129,9 @@ public class HeroKnight : MonoBehaviour {
             if (m_timeSinceAttack > 1.0f)
                 m_currentAttack = 1;
 
-            // Call one of three attack animations "Attack1", "Attack2", "Attack3"
+            // Call one of three attack animations "Attack1", "Attack2", "Attack3"            
             m_animator.SetTrigger("Attack" + m_currentAttack);
+            
 
             // Reset timer
             m_timeSinceAttack = 0.0f;
@@ -191,5 +202,23 @@ public class HeroKnight : MonoBehaviour {
             // Turn arrow in correct direction
             dust.transform.localScale = new Vector3(m_facingDirection, 1, 1);
         }
+    }
+
+    private void OnAttack(){
+        Collider2D[] enemies = Physics2D.OverlapCircleAll(attackPos.position, attackRange, enemy);
+
+        for (int i = 0; i < enemies.Length; i++){
+            enemies[i].GetComponent<Enemy>().TakeDamage(damage);
+        }
+    }
+
+    private void OnDrawGizmosSelected() {
+    Gizmos.color = Color.red;
+    Gizmos.DrawWireSphere(attackPos.position, attackRange);
+    }
+
+    public void TakeDamage(int damage){
+        health -= damage;
+        m_animator.SetTrigger("Hurt");
     }
 }
